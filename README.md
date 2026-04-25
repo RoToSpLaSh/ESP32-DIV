@@ -45,6 +45,6 @@
 <p></p>
 <p>XTP2046_Touchscreen by Paul Stoffregen </p>
 <p></p>
-<p>rc-switch by sui77</p>
-
-		change PLATFORM file following the indications of the original cifer project
+<p>rc-switch by sui77 </p>
+<p></p>
+<p>change PLATFORM file following the indications of the original <a href="https://github.com/cifertech/ESP32-DIV" title="Go to GitHub repo"><img src="https://img.shields.io/static/v1?label=cifertech&message=ESP32-DIV&color=purple&logo=github" alt="cifertech - ESP32-DIV"></a></p>
