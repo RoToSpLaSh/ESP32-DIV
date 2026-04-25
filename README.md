@@ -1,6 +1,6 @@
 <p>CORE: ESP32 S3</p>
 <p></p>
-<p>PIN: SEE SHARED.H FILE FOR PIN MAP</p>
+<p>PIN: LOOK SHARED.H FILE FOR PIN MAP</p>
 <p></p>
 <p>RADIO: 1x CC1101, 2X E01-ML01DP5</p>
 <p></p>
