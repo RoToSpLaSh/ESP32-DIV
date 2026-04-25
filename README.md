@@ -47,4 +47,4 @@
 <p></p>
 <p>rc-switch by sui77 </p>
 <p></p>
-<p>change PLATFORM file following the indications of the original <a href="https://github.com/cifertech/ESP32-DIV" title="Go to GitHub repo"><img src="https://img.shields.io/static/v1?label=cifertech&message=ESP32-DIV&color=purple&logo=github" alt="cifertech - ESP32-DIV"></a></p>
+<p>change <a href="https://github.com/cifertech/ESP32-DIV/blob/main/Previous%20versions/ESP32-DIV%20v1/Flash%20File/platform.txt">platform</a> file following the indications of the original <a href="https://github.com/cifertech/ESP32-DIV" title="Go to GitHub repo"><img src="https://img.shields.io/static/v1?label=cifertech&message=ESP32-DIV&color=purple&logo=github" alt="cifertech - ESP32-DIV"></a> project</p>
