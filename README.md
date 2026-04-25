@@ -6,7 +6,7 @@ RADIO: 1x CC1101, 2X E01-ML01DP5
 
 SD: SD CARD MODULE WITHOUT DC PIN
 
-PUSH BOTTON: PCF8574 EXPANDER VIA SDA PIN 8 SCL PIN 9
+BOTTON: PCF8574 EXPANDER VIA SDA PIN 8 SCL PIN 9
 
 IR: IR RECIVER , IR TRASMITTER
 
@@ -14,6 +14,6 @@ POWER: 2 VOLTAGE REGULATORS MODULE FOR E01-ML01DP5 WITH 10uF ON VCC AND GND OF E
 
 IDE: COMPILE WITH Arduino IDE 2.3.8
 
-CORE: esp32 core of Espressif System VERSION 2.0.10 LIBRARY: NimBLE-Arduino by h2zero VERSION 1.4.2 arduinoFFT by Enrique Condes VERSION 1.6.2 Adafruit NeoPixel Adafruit PCF8574 IRremoteESP32 by ws551 IRremoteESP8266 by David Conran IRremote by shirriff,z3t0 PCF8574 library by Renzo Mischianti RF24 by TMRh20 SmartRC-CC1101-Driver-Lab by Satan TFT_eSPI by Bodmer XTP2046_Touchscreen by Paul Stoffregen rc-switch by sui77
+CORE: esp32 core of Espressif System VERSION 2.0.10 LIBRARY: NimBLE-Arduino by h2zero VERSION 1.4.2 arduinoFFT by Enrique Condes VERSION 1.6.2 Adafruit NeoPixel Adafruit PCF8574 IRremoteESP32 by ws551 IRremoteESP8266 by David Conran IRremote by shirriff,z3t0 PCF8574 library by Renzo Mischianti RF24 by TMRh20 SmartRC-CC1101-Driver-Lab by Satan TFT_eSPI by Bodmer XTP2046_Touchscreen by Paul Stoffregen rc-switch by sui77 
 
 		change PLATFORM file following the indications of the original cifer project
