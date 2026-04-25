@@ -126,7 +126,7 @@ ESP32DIV consists of two boards:
 - **Buzzer** - It shares a GPIO with the battery voltage divider, so using it is optional.
 
 ### 🛡️ Shield
-- **3x NRF24 Modules** – 2.4GHz jamming and spoofing
+- **2x NRF24 Modules** – 2.4GHz jamming and spoofing
 - **1x CC1101 Module** – Sub-GHz jamming and replay
 - **Multiple antennas**
 - **Infrared**
