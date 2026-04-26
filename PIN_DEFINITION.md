@@ -87,3 +87,12 @@
 * per la lettura batteria usare partitore resistivo
 * la temperatura di status bar è interna al chip, non ambiente
 
+* SCHEDA: ESP32 S3 Dev Module
+* SELECT YOUR PORT
+* USB CDC on BOOT ENABLED
+* PARTITION SCHEME MINIMAL SPIFFS
+* PROGRAMMAOTRE Espool
+
+
+
+
