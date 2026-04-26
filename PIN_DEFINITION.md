@@ -15,7 +15,7 @@
 
 
 
-##NRF24
+## NRF24
 
 * CE\_PIN\_1  15
 * CSN\_PIN\_1 4
@@ -26,7 +26,7 @@
 
 
 
-CC1101
+## CC1101
 
 * GDO 6
 
@@ -68,12 +68,9 @@ CC1101
 
 ## IR REMOTE
 
-*RX 41
+* RX 41
 
-*TX 42
-
-
-
+* TX 42
 
 
 ## Moduli usati nel progetto
