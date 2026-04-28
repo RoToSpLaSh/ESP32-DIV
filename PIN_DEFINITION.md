@@ -73,25 +73,21 @@
 * TX 42
 
 
-## Moduli usati nel progetto
+## USED MODULE
 
 * display ILI9341
 * touch XPT2046
 * modulo SD senza card detect
 * radio BLE / WiFi integrate ESP32-S3
 * modulo CC1101 nel reparto SubGHz
+* 2X E01-ML01DPS Ebyte
 
-## Note pratiche
-
-* non usare SD\_CD / SD\_CD\_PIN se il tuo modulo SD ne è privo
-* per la lettura batteria usare partitore resistivo
-* la temperatura di status bar è interna al chip, non ambiente
 
 * SCHEDA: ESP32 S3 Dev Module
 * SELECT YOUR PORT
 * USB CDC on BOOT ENABLED
 * PARTITION SCHEME MINIMAL SPIFFS
-* PROGRAMMAOTORE Espool
+* PROGRAMMATORE EspTool
 * IF TOU WANT FULL LOGGING, COMPILE WITH FLAGGING "CORE DEBUG LEVEL : DEBUG"
 * DISABLE THE "SHOW DETAILED COMPILE AND LOAD OUTPUT" OPTION IN ARDUINO IDE SETTINGS TO PREVENT ARDUINO IDE CRASHES
 
