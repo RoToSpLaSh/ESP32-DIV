@@ -6,8 +6,19 @@
 #include "freertos/task.h"
 #include "icon.h"
 #include "shared.h"
+#include "SettingsStore.h"
 
 #include <Adafruit_NeoPixel.h>
+#ifndef BATTERY_CAL_FACTOR
+#define BATTERY_CAL_FACTOR 1.00f
+#endif
+#ifndef BATTERY_PERCENT_SMOOTHING
+#define BATTERY_PERCENT_SMOOTHING 0.20f
+#endif
+#ifndef BATTERY_PERCENT_HYSTERESIS
+#define BATTERY_PERCENT_HYSTERESIS 2
+#endif
+
 namespace WifiScan { int getLastCount(); bool isUiScanningActive(); }
 namespace BleScan { int getLastCount(); bool isUiScanningActive(); }
 
@@ -20,17 +31,36 @@ static void ledInit() {
   if (internalLedReady) return;
   internalLed.begin();
   internalLed.clear();
-  internalLed.setBrightness(26);
+  internalLed.setBrightness(NEOPIXEL_BRIGHTNESS);
   internalLed.show();
   internalLedReady = true;
 }
 
+static void ledForceOff() {
+  ledInit();
+  internalLed.clear();
+  internalLed.show();
+  ledLastR = 0;
+  ledLastG = 0;
+  ledLastB = 0;
+}
+
 static void ledSetSimple(uint8_t r, uint8_t g, uint8_t b) {
   ledInit();
+
+  // Settings -> NeoPixel now controls the real hardware output.
+  // If disabled, always keep the LED physically off.
+  if (!settings().neopixelEnabled) {
+    ledForceOff();
+    return;
+  }
+
   if (r == ledLastR && g == ledLastG && b == ledLastB) return;
-  internalLed.setBrightness(26);
+
+  internalLed.setBrightness(NEOPIXEL_BRIGHTNESS);
   internalLed.setPixelColor(0, internalLed.Color(r, g, b));
   internalLed.show();
+
   ledLastR = r;
   ledLastG = g;
   ledLastB = b;
@@ -38,6 +68,9 @@ static void ledSetSimple(uint8_t r, uint8_t g, uint8_t b) {
 
 void ledInitExternal() {
   ledInit();
+  if (!settings().neopixelEnabled) {
+    ledForceOff();
+  }
 }
 
 void ledSetExternal(uint8_t r, uint8_t g, uint8_t b) {
@@ -46,13 +79,10 @@ void ledSetExternal(uint8_t r, uint8_t g, uint8_t b) {
 
 static uint32_t internalLedLastColor = 0xFFFFFFFFu;
 static void ledSet(uint8_t r, uint8_t g, uint8_t b) {
-  ledInit();
-  uint32_t color = internalLed.Color(r, g, b);
-  if (color == internalLedLastColor) return;
-  internalLed.setPixelColor(0, color);
-  internalLed.show();
-  internalLedLastColor = color;
+  ledSetSimple(r, g, b);
+  internalLedLastColor = internalLed.Color(r, g, b);
 }
+
 #include "utils.h"
 #include "SDCardManager.h"
 
@@ -1345,7 +1375,16 @@ static bool applyTheme(Theme t){
 static bool applyNeoPixel(bool en){
   auto& s = settings();
   if (s.neopixelEnabled == en) return false;
+
   s.neopixelEnabled = en;
+
+  // Apply immediately to the physical LED, not only to saved settings.
+  if (en) {
+    ledSetExternal(0, 255, 0);   // idle green after enable
+  } else {
+    ledForceOff();               // physically off after disable
+  }
+
   dirtySettings = true;
   uiDirty = true;
   lastChangeMs = millis();

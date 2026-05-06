@@ -353,22 +353,29 @@ extern bool submenu_initialized;
 extern bool is_main_menu;
 extern bool feature_exit_requested;
 
+
+/*──────────────────── NeoPixel / ESP32-S3 Internal RGB ────────────────────*/
+#ifndef NEOPIXEL_PIN
+#define NEOPIXEL_PIN 48
+#endif
+
+#ifndef NUM_PIXELS
+#define NUM_PIXELS 1
+#endif
+
+#ifndef NEOPIXEL_BRIGHTNESS
+#define NEOPIXEL_BRIGHTNESS 26
+#endif
+
 #endif
 // 2x E01 SAFE MODE: connect only modules #1 and #3 in hardware; keep #2 disconnected.
-
-// Internal RGB LED (reserved in this branch)
-#define NEOPIXEL_PIN 48
-#define NUM_PIXELS 1
-
 #define BATTERY_CAL_FACTOR 1.085f
 
 #define BATTERY_SMOOTHING 0.1f
 
 #define BATTERY_EMPTY_VOLTAGE 3.30f
 #define BATTERY_FULL_VOLTAGE 4.20f
-
-#define BATTERY_PERCENT_SMOOTHING 0.08f
-
+#define BATTERY_PERCENT_SMOOTHING 0.20f
 #define BATTERY_PERCENT_HYSTERESIS 2
 
 #define BATTERY_FORCE_EMPTY_VOLTAGE 3.30f

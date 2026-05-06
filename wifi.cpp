@@ -12,6 +12,11 @@
 #include "esp_wifi.h"
 #include "esp_netif.h"
 
+static void wifiScannerRedrawStatusBarSafe() {
+  drawStatusBar(readBatteryVoltage(), true);
+}
+
+
 #ifndef LOGP
   #define LOGP(tag, msg) do { Serial.print("["); Serial.print(millis()); Serial.print("]"); Serial.print(tag); Serial.print(" "); Serial.println(msg); } while(0)
   #define LOGPV(tag, label, value) do { Serial.print("["); Serial.print(millis()); Serial.print("]"); Serial.print(tag); Serial.print(" "); Serial.print(label); Serial.println(value); } while(0)
@@ -83,6 +88,7 @@ static bool wifiFeatureDriverReady = false;
 
 static void prepareWifiFeatureDriver() {
   WiFi.scanDelete();
+  wifiScannerRedrawStatusBarSafe();
   ledSetExternal(0, 255, 0);
   esp_wifi_set_promiscuous(false);
   delay(20);
@@ -1948,7 +1954,6 @@ void deauthdetectLoop() {
 }
 
 namespace WifiScan {
-
 #define TFT_WIDTH 240
 #define TFT_HEIGHT 320
 
@@ -2176,6 +2181,7 @@ void displayScanning() {
 }
 
 void startWiFiScan() {
+  wifiScannerRedrawStatusBarSafe();
   LOGP("[WIFI]", "scan start");
   if (!radioStateTryAcquire(RADIO_WIFI, 140)) return;
   currentIndex = 0;
@@ -2405,6 +2411,7 @@ void wifiscanSetup() {
   delay(80);
 
   tft.fillScreen(TFT_BLACK);
+  wifiScannerRedrawStatusBarSafe();
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(1);
   tft.fillRect(0, 20, 140, 16, DARK_GRAY);

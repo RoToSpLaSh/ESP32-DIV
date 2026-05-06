@@ -1762,6 +1762,221 @@ void exit() {
 
 namespace Scanner {
 
+#define SCANNER_BRUCE_LOOP_ENGINE 1
+
+static uint8_t scannerLoopChannel = 0;
+static uint32_t scannerLoopLastUiMs = 0;
+
+static inline void scannerBruceLoopReset() {
+  scannerLoopChannel = 0;
+  scannerLoopLastUiMs = 0;
+}
+
+#define SCANNER_ULTRA_FLUID_DRIVER_LEVEL 1
+#define SCANNER_ULTRA_CHANNELS 126
+
+static bool scannerUltraGridDrawn = false;
+static uint8_t scannerUltraLevel[SCANNER_ULTRA_CHANNELS] = {0};
+static uint8_t scannerUltraPrevLevel[SCANNER_ULTRA_CHANNELS] = {255};
+// static uint8_t scannerUltraPeak[SCANNER_ULTRA_CHANNELS] = {0};
+// static uint8_t scannerUltraPeakTimer[SCANNER_ULTRA_CHANNELS] = {0};
+
+static inline uint16_t scannerUltraColor(uint8_t level) {
+  if (level > 85) return TFT_RED;
+  if (level > 65) return TFT_ORANGE;
+  if (level > 45) return TFT_YELLOW;
+  if (level > 25) return TFT_GREEN;
+  return TFT_DARKGREEN;
+}
+
+static inline void scannerUltraInvalidate() {
+  scannerUltraGridDrawn = false;
+  memset(scannerUltraLevel, 0, sizeof(scannerUltraLevel));
+  // memset(scannerUltraPeak, 0, sizeof(scannerUltraPeak));
+  // memset(scannerUltraPeakTimer, 0, sizeof(scannerUltraPeakTimer));
+  memset(scannerUltraPrevLevel, 255, sizeof(scannerUltraPrevLevel));
+}
+
+static inline void scannerUltraDrawGridOnce() {
+  if (scannerUltraGridDrawn) return;
+
+  const int tftW = 240;
+  const int tftH = 320;
+  const int footerH = 14;
+  const int headerY = 38;
+  const int footerY = tftH - footerH;
+  const int barY = headerY;
+  const int barH = footerY - barY - 2;
+  const int margin = 2;
+  const int drawW = tftW - (margin * 2);
+  const int midY = headerY + ((footerY - headerY - 2) / 2);
+  tft.drawFastHLine(0, midY, 240, TFT_WHITE);
+  tft.fillRect(0, headerY, tftW, tftH - headerY, TFT_BLACK);
+
+  tft.setTextSize(1);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(margin, footerY + 2);
+  tft.print("2.400");
+  tft.setCursor((tftW / 2) - 16, footerY + 2);
+  tft.print("2.462");
+  tft.setCursor(tftW - margin - 34, footerY + 2);
+  tft.print("2.525");
+
+  // tft.drawFastHLine(0, barY + barH + 1, tftW, TFT_DARKGREY);
+
+  for (int i = 0; i < SCANNER_ULTRA_CHANNELS; i += 10) {
+    int x = margin + (i * drawW) / SCANNER_ULTRA_CHANNELS;
+    tft.drawFastVLine(x, barY, barH, TFT_DARKGREY);
+  }
+
+  scannerUltraGridDrawn = true;
+  memset(scannerUltraPrevLevel, 255, sizeof(scannerUltraPrevLevel));
+}
+
+static inline void scannerUltraUpdate(uint8_t ch, bool rpd) {
+  if (ch >= SCANNER_ULTRA_CHANNELS) return;
+
+  // Bruce nrf_spectrum.cpp smoothing.
+  // if (rpd) {
+  //   scannerUltraLevel[ch] = (uint8_t)((scannerUltraLevel[ch] * 3 + 100) / 4);
+  // } else {
+  //   scannerUltraLevel[ch] = (uint8_t)((scannerUltraLevel[ch] * 5) / 6);
+  // }
+  uint8_t level = scannerUltraLevel[ch];
+
+if (rpd) {
+  // PRO ATTACK: sale veloce se basso, più morbido quando è già alto
+  if (level < 30) {
+    level = (uint8_t)((level * 1 + 100) / 2);   // molto veloce
+  } else if (level < 70) {
+    level = (uint8_t)((level * 2 + 100) / 3);   // medio/veloce
+  } else {
+    level = (uint8_t)((level * 4 + 100) / 5);   // morbido in alto
+  }
+} else {
+  // PRO DECAY: scende naturale, non cade a scalini
+  if (level > 70) {
+    level = (uint8_t)((level * 9) / 10);        // lenta in alto
+  } else if (level > 30) {
+    level = (uint8_t)((level * 7) / 8);         // media
+  } else {
+    level = (uint8_t)((level * 5) / 6);         // morbida in basso
+  }
+
+  if (level < 2) level = 0;                     // evita puntini residui
+}
+
+scannerUltraLevel[ch] = level;
+
+  // if (scannerUltraLevel[ch] >= scannerUltraPeak[ch]) {
+  //   scannerUltraPeak[ch] = scannerUltraLevel[ch];
+  //   scannerUltraPeakTimer[ch] = 25;
+  // } else if (scannerUltraPeakTimer[ch] > 0) {
+  //   scannerUltraPeakTimer[ch]--;
+  // } else {
+  //   if (scannerUltraPeak[ch] > 2) scannerUltraPeak[ch] -= 2;
+  //   else scannerUltraPeak[ch] = 0;
+  // }
+}
+
+static inline void scannerUltraDrawChannel(uint8_t ch) {
+  if (ch >= SCANNER_ULTRA_CHANNELS) return;
+  scannerUltraDrawGridOnce();
+
+  uint8_t level = scannerUltraLevel[ch];
+  if (scannerUltraPrevLevel[ch] == level) return;
+
+  const int tftW = 240;
+  const int tftH = 320;
+  const int footerH = 14;
+  const int headerY = 38;
+  const int footerY = tftH - footerH;
+  const int midY = headerY + ((footerY - headerY - 2) / 2);
+  const int halfH = (footerY - headerY - 2) / 2 - 8;
+  const int margin = 2;
+  const int drawW = tftW - (margin * 2);
+
+  int x = margin + (ch * drawW) / SCANNER_ULTRA_CHANNELS;
+  int nextX = margin + ((ch + 1) * drawW) / SCANNER_ULTRA_CHANNELS;
+  int w = nextX - x;
+  if (w < 1) w = 1;
+
+  // int newH = (level * barH) / 100;
+  // int peakH = (scannerUltraPeak[ch] * barH) / 100;
+
+  //uint16_t gridColor = (ch % 10 == 0) ? TFT_DARKGREY : TFT_BLACK;
+  uint16_t gridColor = TFT_BLACK;
+  int h = (level * halfH) / 100;
+  if (h < 2) h = 0;
+
+  tft.fillRect(x, headerY, w, halfH, TFT_BLACK);
+  tft.fillRect(x, midY + 8, w, halfH, TFT_BLACK);
+
+  if (ch % 10 == 0) {
+  tft.drawFastVLine(x, headerY, halfH, TFT_DARKGREY);
+  tft.drawFastVLine(x, midY + 8, halfH, TFT_DARKGREY);
+}
+  if (h > 0) {
+  uint16_t color = scannerUltraColor(level);
+
+  // barra superiore: dall’alto verso il centro
+  tft.fillRect(x, headerY, w, h, color);
+
+  // barra inferiore: dal basso verso il centro
+  tft.fillRect(x, footerY - 2 - h, w, h, color);
+}
+  tft.drawFastHLine(0, midY, 240, TFT_WHITE);
+  tft.setTextSize(1);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+
+  for (int c = 0; c <= 120; c += 15) {
+  int x = margin + (c * drawW) / SCANNER_ULTRA_CHANNELS;
+
+  tft.drawFastVLine(x, midY - 4, 8, TFT_WHITE);
+
+  int tx = x;
+  if (c >= 100) tx -= 8;
+  else if (c >= 10) tx -= 5;
+  else tx -= 2;
+
+  if (tx < 0) tx = 0;
+  if (tx > 225) tx = 225;
+
+  tft.setCursor(tx, midY + 6);
+  tft.print(c);
+}
+
+  // if (peakH > 0 && peakH >= newH) {
+  //   int peakY = barY + barH - peakH;
+  //   if (peakY >= barY && peakY < barY + barH) {
+  //     tft.fillRect(x, peakY, w, 1, TFT_WHITE);
+  //   }
+  // }
+
+  scannerUltraPrevLevel[ch] = level;
+}
+#define SCANNER_GRAPH_DEBUG_ONLY 1
+static uint32_t scannerDebugLastMs = 0;
+static uint8_t scannerDebugLastBucket = 255;
+
+static inline void scannerGraphDebugLog(uint8_t ch, bool hit) {
+  uint8_t bucket = ch / 10;
+  uint32_t now = millis();
+  if (bucket == scannerDebugLastBucket && (now - scannerDebugLastMs) < 350) return;
+  scannerDebugLastBucket = bucket;
+  scannerDebugLastMs = now;
+  Serial.print("[SCANNER_DBG] ch=");
+  Serial.print(ch);
+  Serial.print(" bucket=");
+  Serial.print(bucket * 10);
+  Serial.print("-");
+  Serial.print((bucket * 10) + 9);
+  Serial.print(" hit=");
+  Serial.println(hit ? "1" : "0");
+}
+
+
+
 void scannerRf24EnterIdle() {
   LOGP("[RF24]", "scanner enter idle");
   RDLOG("[RF24] scanner enter idle");
@@ -1912,6 +2127,7 @@ void calibrateBackgroundNoise() {
       for (int i = 0; i < CHANNELS; i++) {
 
         setRegister(_NRF24_RF_CH, (uint8_t)i);
+      scannerGraphDebugLog((uint8_t)i, false);
         enable();
         delayMicroseconds(RX_SETTLE_US + RPD_DWELL_US);
         disable();
@@ -2097,83 +2313,15 @@ void outputChannels() {
 }
 
 void display() {
+  // Ultra-fluid mode: spectrum is drawn one channel at a time in scannerBruceLoopScanStep().
   runUI();
-
-  #define SCREEN_WIDTH 0
-  #define SCREEN_HEIGHT 308
-
-  memset(values, 0, sizeof(values));
-
-  int scanCycles = (int)DISPLAY_SWEEPS;
-  while (scanCycles-- && scanning) {
-    if (isSelectButtonPressed()) {
-      scanning = false;
-      Print("Display interrupted by user", TFT_YELLOW, true);
-      return;
-    }
-    for (int i = 0; i < N && scanning; ++i) {
-      setChannel(i);
-      enable();
-
-      delayMicroseconds(RX_SETTLE_US + RPD_DWELL_US);
-      disable();
-      if (carrierDetected()) {
-        values[i]++;
-      }
-    }
-
-    runUI();
-    delay(0);
-  }
-
-  if (scanning) {
-    tft.fillRect(0, 190, 240, 200, TFT_BLACK);
-
-#define CHANNELS 128
-
-    int barWidth = 1;
-    int maxBarHeight = SCREEN_HEIGHT - 5;
-    int x = 10;
-    int xx = 120;
-
-    for (int i = 0; i < 64; ++i) {
-      int barHeight = values[i] * 3;
-      if (barHeight > maxBarHeight) barHeight = maxBarHeight;
-
-      tft.fillRect(x, SCREEN_HEIGHT - barHeight, barWidth, barHeight, TFT_WHITE);
-      x += barWidth;
-    }
-
-    for (int i = 64; i < 128; ++i) {
-      int barHeight = values[i] * 3;
-      if (barHeight > maxBarHeight) barHeight = maxBarHeight;
-
-      tft.fillRect(xx, SCREEN_HEIGHT - barHeight, barWidth, barHeight, TFT_WHITE);
-      xx += barWidth;
-    }
-
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor(10, 310);
-    tft.print("1..5.10..20..40..50..80..90..110..128");
-
-    int midX = 10;
-    int midY = tft.height() - 13;
-
-    tft.drawLine(midX, 200, midX, 305, TFT_WHITE);
-    tft.drawLine(midX, midY, 230, midY, TFT_WHITE);
-
-    tft.fillCircle(midX, midY, 1, TFT_RED);
-    tft.fillCircle(10, 200, 1, TFT_RED);
-    tft.fillCircle(230, midY, 1, TFT_RED);
-
-    tft.setTextColor(TFT_WHITE);
-    tft.setTextSize(1);
-    tft.drawString("Y", midX + 5, 200);
-    tft.drawString("X", tft.width() - 15, midY - 9);
-  }
 }
 
+
 void scannerSetup() {
+  scannerBruceLoopReset();
+  scannerUltraInvalidate();
+  Serial.println("[SCANNER_DBG] Graph debug active");
 
   scannerRf24PrepareEntry();
   tft.fillScreen(TFT_BLACK);
@@ -2185,10 +2333,10 @@ void scannerSetup() {
 
   setupTouchscreen();
 
-  Print(" ", TFT_GREEN, false);
-  Print(" ", TFT_GREEN, false);
-  Print(" ", TFT_GREEN, false);
-  Print("[*] 2.4GHz Scanner Initialized...", TFT_GREEN, false);
+  // Print(" ", TFT_GREEN, false);
+  // Print(" ", TFT_GREEN, false);
+  // Print(" ", TFT_GREEN, false);
+  // Print("[*] 2.4GHz Scanner Initialized...", TFT_GREEN, false);
 
   prepareE01SharedBus();
   SPI.end();
@@ -2213,16 +2361,47 @@ void scannerSetup() {
   scanning = true;
 }
 
+
+static void scannerBruceLoopScanStep() {
+  uint8_t ch = scannerLoopChannel;
+  if (ch >= SCANNER_ULTRA_CHANNELS) ch = 0;
+
+  // Bruce RF timing: channel switch + ~170us RPD sample.
+  setChannel(ch);
+  enable();
+  delayMicroseconds(170);
+  bool rpd = carrierDetected();
+  disable();
+
+  scannerUltraUpdate(ch, rpd);
+  // scannerUltraDrawChannel(ch);
+  static uint32_t lastDrawUs = 0;
+  uint32_t nowUs = micros();
+
+  if (nowUs - lastDrawUs >= 900) {
+  scannerUltraDrawChannel(ch);
+  lastDrawUs = nowUs;
+}
+
+  scannerLoopChannel++;
+  if (scannerLoopChannel >= SCANNER_ULTRA_CHANNELS) {
+    scannerLoopChannel = 0;
+  }
+}
+
+
+static void scannerBruceLoopScanBatch(uint8_t count) {
+  for (uint8_t n = 0; n < count; ++n) {
+    scannerBruceLoopScanStep();
+  }
+}
+
 void scannerLoop() {
   scanning = true;
-  while (scanning) {
+  scannerBruceLoopReset();
+  scannerUltraInvalidate();
 
-    if (feature_active && isButtonPressed(BTN_SELECT)) {
-      feature_active=false; in_sub_menu=false; feature_exit_requested = true;
-      scannerRf24EnterIdle();
-      scanning = false;
-      break;
-    }
+  while (scanning) {
     if (feature_exit_requested) {
       scannerRf24EnterIdle();
       scanning = false;
@@ -2235,13 +2414,19 @@ void scannerLoop() {
       Print("Scanner stopped by user", TFT_YELLOW, true);
       break;
     }
+
+    // Incremental RF scan: no full sweep blocking.
+    scannerBruceLoopScanBatch(20);
+
+    // UI and renderer are called continuously. display() has its own frame limiter.
     runUI();
-    scanChannels();
-    outputChannels();
     display();
-    delay(5);
-    }
+
+    // Yield to ESP32 tasks/watchdog.
+    delay(0);
   }
+}
+
 }
 
 namespace ProtoKill {
